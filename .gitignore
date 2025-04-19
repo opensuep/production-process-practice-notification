@@ -1,0 +1,15 @@
+# python
+__pycache__
+*.py[cod]
+
+# virtualenvs
+bin
+include
+lib
+lib64
+Scripts
+pyvenv.cfg
+/env
+/.env
+/.venv2
+/.venv3
