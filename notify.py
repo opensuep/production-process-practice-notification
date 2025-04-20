@@ -19,8 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import socket
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
 
 import requests
 
@@ -53,7 +56,36 @@ def show_notify(title: str, notify: str) -> None:
         toaster.show_toast(new_toast)
 
 
+# 这个函数是从 suep-toolkit(https://github.com/zhengxyz123/suep-toolkit) 项目中复制过来的
+# 该项目同样使用 MIT 许可证
+def test_network(timeout: float = 0.5) -> bool:
+    """检测设备是否连接学校内网。
+
+    若超时时间小于 0.5 秒，则可能会有误报。
+    """
+    ip_addrs = ["10.50.2.206", "10.166.18.114", "10.166.19.26", "10.168.103.76"]
+    test_result = Queue()
+
+    def test_helper(addr: str) -> None:
+        try:
+            socket.create_connection((addr, 80), timeout=timeout)
+            test_result.put(1)
+        except TimeoutError:
+            pass
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        for addr in ip_addrs:
+            executor.submit(test_helper, addr)
+    count = 0
+    while not test_result.empty():
+        count += test_result.get()
+    return count / len(ip_addrs) >= 0.5
+
+
 def main(session_id: str) -> None:
+    if not test_network():
+        show_notify(notify_title, "需要连接校园网")
+        return
     task = -1
     while True:
         # 新任务提醒
